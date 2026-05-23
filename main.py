@@ -1,10 +1,8 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import TimeoutException
 import os
 
@@ -19,7 +17,8 @@ def main():
     options.add_argument('--disable-gpu')
     options.add_argument('--window-size=1920,1080')
 
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    # Natively utilize the stable Chrome package installed in your GH Actions workflow
+    driver = webdriver.Chrome(options=options)
 
     try:
         driver.get(STREAMLIT_URL)
@@ -27,16 +26,17 @@ def main():
 
         wait = WebDriverWait(driver, 15)
         try:
+            # Case-resilient XPath text matching for the sleep screen button
+            wake_button_xpath = "//button[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'get this app back up')]"
+            
             # Look for the wake-up button
-            button = wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Yes, get this app back up')]"))
-            )
+            button = wait.until(EC.element_to_be_clickable((By.XPATH, wake_button_xpath)))
             print("Wake-up button found. Clicking...")
             button.click()
 
             # After clicking, check if it disappears
             try:
-                wait.until(EC.invisibility_of_element_located((By.XPATH, "//button[contains(text(),'Yes, get this app back up')]")))
+                wait.until(EC.invisibility_of_element_located((By.XPATH, wake_button_xpath)))
                 print("Button clicked and disappeared ✅ (app should be waking up)")
             except TimeoutException:
                 print("Button was clicked but did NOT disappear ❌ (possible failure)")
